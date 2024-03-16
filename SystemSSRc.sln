@@ -3,7 +3,12 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.8.34330.188
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SystemSSRc", "SystemSSRc\SystemSSRc.csproj", "{5EC1ACB9-C828-4B6C-BC32-CCE004A4EA9C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SystemSSRc", "SystemSSRc\SystemSSRc.csproj", "{5EC1ACB9-C828-4B6C-BC32-CCE004A4EA9C}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Элементы решения", "Элементы решения", "{B2EF8FDE-5A54-4103-84EF-D0A7BEA1A219}"
+	ProjectSection(SolutionItems) = preProject
+		pathes.ini = pathes.ini
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
