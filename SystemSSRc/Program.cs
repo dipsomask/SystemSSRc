@@ -1,5 +1,8 @@
-﻿using System.Net;
+﻿using System.Diagnostics;
+using System.Net;
 using System.Net.Sockets;
+using IniParser;
+using IniParser.Model;
 
 
 
@@ -16,7 +19,7 @@ public abstract class Listener
 
     protected TcpListener listener;
 
-    protected int Port;
+    public int Port {  get; private set; }
 
 
     public Listener(int port_ = 80)
@@ -50,13 +53,13 @@ public abstract class Listener
 
 
     // methodes for SystemListenerSSRc
-    public virtual void MakeUser() {  }
+    public virtual void MakeUser(string _) {  }
 
 
-    public virtual void StopUser() {  }
+    public virtual void StopUser(string _) {  }
 
 
-    public virtual void DeleteUser() {  }
+    public virtual void DeleteUser(string _) {  }
 
 
     public virtual void AddPath(string arg1, string arg2) {  }
@@ -70,7 +73,7 @@ public abstract class Listener
 
 
     // methodes for UserListenerSSRc
-    public virtual void RunProcess(object? _) { }
+    public virtual void RunProcess(object _) { }
 
     public virtual void DownloadObject(object? _) {  }
 
@@ -104,19 +107,21 @@ public class SystemListenerSSRc : Listener
     }
 
 
-    public override void MakeUser()
+    public override void MakeUser(string username)
+    {
+        
+
+
+    }
+
+
+    public override void StopUser(string username)
     {
         Console.WriteLine("ok");
     }
 
 
-    public override void StopUser()
-    {
-        Console.WriteLine("ok");
-    }
-
-
-    public override void DeleteUser()
+    public override void DeleteUser(string username)
     {
         Console.WriteLine("ok");
     }
@@ -168,10 +173,47 @@ public class UserListenerSSRc(int port_) : Listener(port_)
     }
 
 
-    public override void RunProcess(object? _)
+    public override void RunProcess(object _)
     {
 
-        Console.WriteLine("ok");
+        if(_.GetType() == typeof(string))
+        {
+
+            string strArg = (string) _;
+
+            if (!strArg.Contains(".exe"))
+            {
+
+                string extension = strArg.Split('.').Last().ToLower();
+
+                var iniParser = new FileIniDataParser();
+
+                IniData allDataFromIniFile = iniParser.ReadFile(@"C:\.SERVER\.system\SystemSSRc\resurved.ini");
+
+                string extensionPath = allDataFromIniFile["Compilers"][extension];
+
+                if(extensionPath == null)
+                {
+
+                    Console.WriteLine($"Can't run file with extension: {extension}...");
+
+                    return;
+
+                }
+
+
+
+            }
+
+            Process processToRun = new Process();
+
+            processToRun.StartInfo.UseShellExecute = false;
+
+            processToRun.StartInfo.FileName = _.ToString();
+
+            processToRun.Start();
+
+        }
 
     }
 
@@ -204,9 +246,12 @@ internal class ConsoleSSRc
     {"add", "-pa" },
     {"remove", "-pa" },
     {"find", "-pa"},
+    {"run"},
     */
 
     private SystemListenerSSRc systemL;
+
+    private List<UserListenerSSRc>? userList;
 
 
     public ConsoleSSRc()
@@ -299,6 +344,48 @@ internal class ConsoleSSRc
                                 Console.WriteLine("It is not an internal or external command...");
 
                             }
+
+                        }
+
+                        break;
+
+                    case "run":
+
+                        if( consoleInputArray.Length == 3 && userList != null)
+                        {
+
+                            foreach(var item in userList)
+                            {
+
+                                if(item.Port == Convert.ToInt32(consoleInputArray[1]))
+                                {
+
+                                    if(!Path.Exists(consoleInput[3].ToString()))
+                                    {
+
+                                        Console.WriteLine($"You have not got this path {consoleInput[3]}...");
+
+                                        break;
+
+                                    }
+
+
+                                    item.RunProcess(consoleInput[3]);
+
+
+                                    Console.WriteLine($"Script {consoleInputArray[3]} successfuly ran...");
+
+                                    break;
+
+                                }
+
+                            }
+
+                        }
+                        else
+                        {
+
+                            Console.WriteLine("It is not an internal or external command...");
 
                         }
 

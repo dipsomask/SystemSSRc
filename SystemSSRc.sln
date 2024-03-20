@@ -7,7 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SystemSSRc", "SystemSSRc\Sy
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Элементы решения", "Элементы решения", "{B2EF8FDE-5A54-4103-84EF-D0A7BEA1A219}"
 	ProjectSection(SolutionItems) = preProject
-		pathes.ini = pathes.ini
+		resurved.ini = resurved.ini
 	EndProjectSection
 EndProject
 Global
