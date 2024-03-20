@@ -73,7 +73,79 @@ public abstract class Listener
 
 
     // methodes for UserListenerSSRc
-    public virtual void RunProcess(object _) { }
+    public void RunProcess(object _)
+    {
+
+        if (_.GetType() == typeof(string))
+        {
+
+            string @mainRunFile = (string)_;
+
+            string @argsToRun = string.Empty;
+
+            if (!mainRunFile.Contains(".exe"))
+            {
+
+                string extension = mainRunFile.Split('.').Last().ToLower();
+
+                var iniParser = new FileIniDataParser();
+
+                IniData allDataFromIniFile = iniParser.ReadFile(@"C:\.SERVER\.system\SystemSSRc\resurved.ini");
+
+                string @extensionPath = allDataFromIniFile["Compilers"][extension];
+
+                @mainRunFile = @mainRunFile.Replace("root", allDataFromIniFile["System"]["root"]);
+
+                if (extensionPath == null)
+                {
+
+                    Console.WriteLine($"Can't start process with file extension: {extension}...");
+
+                    return;
+
+                }
+
+                @argsToRun = @mainRunFile;
+
+                @mainRunFile = extensionPath;
+
+            }
+
+            Console.WriteLine(@mainRunFile);
+
+            Console.WriteLine(@argsToRun + "\n");
+
+
+            Process processToRun = new Process();
+
+            if (@argsToRun != string.Empty)
+            {
+
+                processToRun.StartInfo.Arguments = @argsToRun;
+
+            }
+            else
+            {
+
+                var iniParser = new FileIniDataParser();
+
+                IniData allDataFromIniFile = iniParser.ReadFile(@"C:\.SERVER\.system\SystemSSRc\resurved.ini");
+
+                @mainRunFile = @mainRunFile.Replace("root", allDataFromIniFile["System"]["root"]);
+
+            }
+
+            processToRun.StartInfo.FileName = @mainRunFile;
+
+
+
+            processToRun.Start();
+
+            Console.WriteLine($"Process by path: {(string)_} successfuly ran...");
+
+        }
+
+    }
 
     public virtual void DownloadObject(object? _) {  }
 
@@ -88,7 +160,6 @@ public abstract class Listener
 // system listener class
 public class SystemListenerSSRc : Listener
 {
-
 
     public override async void ListenProcess()
     {
@@ -167,51 +238,6 @@ public class UserListenerSSRc(int port_) : Listener(port_)
 
 
 
-
-        }
-
-    }
-
-
-    public override void RunProcess(object _)
-    {
-
-        if(_.GetType() == typeof(string))
-        {
-
-            string strArg = (string) _;
-
-            if (!strArg.Contains(".exe"))
-            {
-
-                string extension = strArg.Split('.').Last().ToLower();
-
-                var iniParser = new FileIniDataParser();
-
-                IniData allDataFromIniFile = iniParser.ReadFile(@"C:\.SERVER\.system\SystemSSRc\resurved.ini");
-
-                string extensionPath = allDataFromIniFile["Compilers"][extension];
-
-                if(extensionPath == null)
-                {
-
-                    Console.WriteLine($"Can't run file with extension: {extension}...");
-
-                    return;
-
-                }
-
-
-
-            }
-
-            Process processToRun = new Process();
-
-            processToRun.StartInfo.UseShellExecute = false;
-
-            processToRun.StartInfo.FileName = _.ToString();
-
-            processToRun.Start();
 
         }
 
@@ -351,41 +377,58 @@ internal class ConsoleSSRc
 
                     case "run":
 
-                        if( consoleInputArray.Length == 3 && userList != null)
+                        if( consoleInputArray.Length == 3)
                         {
 
-                            foreach(var item in userList)
+                            if (Convert.ToInt32(consoleInputArray[1]) == 80)
                             {
 
-                                if(item.Port == Convert.ToInt32(consoleInputArray[1]))
+                                //if (!Path.Exists(consoleInput[3].ToString()))
+                                //{
+
+                                //    Console.WriteLine($"You have not got this path {consoleInput[3]}...");
+
+                                //    break;
+
+                                //}
+
+                                systemL.RunProcess(consoleInputArray[2]);
+
+                            }
+                            else
+                            {
+
+                                foreach (var item in userList)
                                 {
 
-                                    if(!Path.Exists(consoleInput[3].ToString()))
+                                    if (item.Port == Convert.ToInt32(consoleInputArray[1]))
                                     {
 
-                                        Console.WriteLine($"You have not got this path {consoleInput[3]}...");
+                                        if (!Path.Exists(consoleInput[3].ToString()))
+                                        {
+
+                                            Console.WriteLine($"You have not got this path {consoleInput[3]}...");
+
+                                            break;
+
+                                        }
+
+                                        item.RunProcess(consoleInput[3]);
 
                                         break;
 
                                     }
 
-
-                                    item.RunProcess(consoleInput[3]);
-
-
-                                    Console.WriteLine($"Script {consoleInputArray[3]} successfuly ran...");
-
-                                    break;
-
                                 }
 
                             }
+                            
 
                         }
                         else
                         {
 
-                            Console.WriteLine("It is not an internal or external command...");
+                            Console.WriteLine("It is not an internal or external command...1");
 
                         }
 
