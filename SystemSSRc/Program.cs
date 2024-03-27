@@ -518,6 +518,16 @@ internal class ConsoleSSRc
 
                         break;
 
+                    case "exit":
+
+                        System.Environment.Exit(0);
+
+                        break;
+
+                    case "":
+
+                        break;
+
 
                     default:
 
