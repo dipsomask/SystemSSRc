@@ -1,6 +1,8 @@
 ﻿using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
+using System.Security.AccessControl;
+using System.Text;
 using IniParser;
 using IniParser.Model;
 
@@ -73,77 +75,68 @@ public abstract class Listener
 
 
     // methodes for UserListenerSSRc
-    public void RunProcess(object _)
+    public static string RunProcess(string _ )
     {
 
-        if (_.GetType() == typeof(string))
+        string @mainRunFile = (string)_;
+
+        string @argsToRun = string.Empty;
+
+        if (!mainRunFile.Contains(".exe"))
         {
 
-            string @mainRunFile = (string)_;
+            string extension = mainRunFile.Split('.').Last();
 
-            string @argsToRun = string.Empty;
 
-            if (!mainRunFile.Contains(".exe"))
+            var iniParser = new FileIniDataParser();
+
+            IniData allDataFromIniFile = iniParser.ReadFile(@"C:\.SERVER\.system\SystemSSRc\resurved.ini");
+
+
+            string @extensionPath = allDataFromIniFile["Compilers"][extension];
+
+            if (extensionPath == null)
             {
 
-                string extension = mainRunFile.Split('.').Last().ToLower();
-
-                var iniParser = new FileIniDataParser();
-
-                IniData allDataFromIniFile = iniParser.ReadFile(@"C:\.SERVER\.system\SystemSSRc\resurved.ini");
-
-                string @extensionPath = allDataFromIniFile["Compilers"][extension];
-
-                @mainRunFile = @mainRunFile.Replace("root", allDataFromIniFile["System"]["root"]);
-
-                if (extensionPath == null)
-                {
-
-                    Console.WriteLine($"Can't start process with file extension: {extension}...");
-
-                    return;
-
-                }
-
-                @argsToRun = @mainRunFile;
-
-                @mainRunFile = extensionPath;
+                return $"Can't start process with file extension: {extension}...";
 
             }
 
-            Console.WriteLine(@mainRunFile);
 
-            Console.WriteLine(@argsToRun + "\n");
+            @mainRunFile = @mainRunFile.Replace("root", allDataFromIniFile["System"]["root"]);
 
+            @argsToRun = @mainRunFile;
 
-            Process processToRun = new Process();
-
-            if (@argsToRun != string.Empty)
-            {
-
-                processToRun.StartInfo.Arguments = @argsToRun;
-
-            }
-            else
-            {
-
-                var iniParser = new FileIniDataParser();
-
-                IniData allDataFromIniFile = iniParser.ReadFile(@"C:\.SERVER\.system\SystemSSRc\resurved.ini");
-
-                @mainRunFile = @mainRunFile.Replace("root", allDataFromIniFile["System"]["root"]);
-
-            }
-
-            processToRun.StartInfo.FileName = @mainRunFile;
-
-
-
-            processToRun.Start();
-
-            Console.WriteLine($"Process by path: {(string)_} successfuly ran...");
+            @mainRunFile = extensionPath;
 
         }
+
+
+        Process processToRun = new Process();
+
+        if (@argsToRun != string.Empty)
+        {
+
+            processToRun.StartInfo.Arguments = @argsToRun;
+
+        }
+        else
+        {
+
+            var iniParser = new FileIniDataParser();
+
+            IniData allDataFromIniFile = iniParser.ReadFile(@"C:\.SERVER\.system\SystemSSRc\resurved.ini");
+
+            @mainRunFile = @mainRunFile.Replace("root", allDataFromIniFile["System"]["root"]);
+
+        }
+
+        processToRun.StartInfo.FileName = @mainRunFile;
+
+
+        processToRun.Start();
+
+        return $"Process {_.Split('\\').Last()} successfuly ran...";
 
     }
 
@@ -167,11 +160,85 @@ public class SystemListenerSSRc : Listener
         while (true)
         {
 
-            TcpClient Client = await listener.AcceptTcpClientAsync();
+            TcpClient client = await listener.AcceptTcpClientAsync();
 
-            
+            var clientStream = client.GetStream();
 
 
+            // Чтение ответа
+            byte[] buffer = new byte[1024];
+
+            int bytesRead;
+
+            StringBuilder responseData = new StringBuilder();
+
+
+            do
+            {
+
+                bytesRead = await clientStream.ReadAsync(buffer, 0, buffer.Length);
+
+                responseData.Append(Encoding.UTF8.GetString(buffer, 0, bytesRead));
+
+            } while (clientStream.DataAvailable);
+
+
+            string response = responseData.ToString();
+
+            string[] _ = response.Split('\n');
+
+            string responseMessage = _.Last();
+
+            Console.WriteLine($"Response message: {responseMessage}");
+
+
+
+            if (responseMessage != null)
+            {
+
+                string[] responseMessageArray = responseMessage.Split(' ');
+
+                //Console.WriteLine(responseMessageArray[4]);
+
+                switch (responseMessageArray[0])
+                {
+
+                    case "run":
+
+                        if (responseMessageArray.Length == 3)
+                        {
+
+                            if (Convert.ToInt32(responseMessageArray[1]) == 80)
+                            {
+
+                                byte[] requestMessage = Encoding.UTF8.GetBytes(RunProcess(responseMessageArray[2]));
+
+                                await clientStream.WriteAsync(requestMessage);
+                                
+                            }
+
+                        }
+                        else
+                        {
+
+                            Console.WriteLine("It is not an internal or external command...");
+
+                        }
+
+                        break;
+
+
+                    default:
+
+                        Console.WriteLine("It is not an internal or external command...");
+
+                        break;
+
+                }
+
+            }
+
+            client.Close();
 
         }
 
@@ -233,11 +300,32 @@ public class UserListenerSSRc(int port_) : Listener(port_)
         while (true)
         {
 
-            TcpClient Client = await listener.AcceptTcpClientAsync();
+            TcpClient client = await listener.AcceptTcpClientAsync();
+
+            var clientStream = client.GetStream();
 
 
+            // Чтение ответа
+            byte[] buffer = new byte[1024];
+            
+            int bytesRead;
+            
+            StringBuilder responseData = new StringBuilder();
 
 
+            do
+            {
+
+                bytesRead = await clientStream.ReadAsync(buffer, 0, buffer.Length);
+                
+                responseData.Append(Encoding.UTF8.GetString(buffer, 0, bytesRead));
+            
+            } while (clientStream.DataAvailable);
+
+
+            string responseMessage = responseData.ToString().Trim();
+            
+            Console.WriteLine($"Response message: {responseMessage}");
 
         }
 
@@ -272,7 +360,7 @@ internal class ConsoleSSRc
     {"add", "-pa" },
     {"remove", "-pa" },
     {"find", "-pa"},
-    {"run"},
+    {"run", "80", "root\path\to\file"},
     */
 
     private SystemListenerSSRc systemL;
@@ -285,6 +373,10 @@ internal class ConsoleSSRc
 
         systemL = new SystemListenerSSRc();
 
+        // ONLY FOR TEST
+        userList = new List<UserListenerSSRc>() { new UserListenerSSRc(5000) };
+        // ONLY FOR TEST
+
         Console.WriteLine("console ready to work...");
 
     }
@@ -292,6 +384,16 @@ internal class ConsoleSSRc
 
     public async void UsingConsole()
     {
+
+        systemL.StartListen();
+
+        systemL.ListenProcess();
+
+        // ONLY FOR TEST
+        userList[0].StartListen();
+
+        userList[0].ListenProcess();
+        // ONLY FOR TEST
 
         while (true)
         {
@@ -383,16 +485,7 @@ internal class ConsoleSSRc
                             if (Convert.ToInt32(consoleInputArray[1]) == 80)
                             {
 
-                                //if (!Path.Exists(consoleInput[3].ToString()))
-                                //{
-
-                                //    Console.WriteLine($"You have not got this path {consoleInput[3]}...");
-
-                                //    break;
-
-                                //}
-
-                                systemL.RunProcess(consoleInputArray[2]);
+                                Listener.RunProcess(consoleInputArray[2]);
 
                             }
                             else
@@ -404,16 +497,7 @@ internal class ConsoleSSRc
                                     if (item.Port == Convert.ToInt32(consoleInputArray[1]))
                                     {
 
-                                        if (!Path.Exists(consoleInput[3].ToString()))
-                                        {
-
-                                            Console.WriteLine($"You have not got this path {consoleInput[3]}...");
-
-                                            break;
-
-                                        }
-
-                                        item.RunProcess(consoleInput[3]);
+                                        Listener.RunProcess(consoleInputArray[2]);
 
                                         break;
 
@@ -428,7 +512,7 @@ internal class ConsoleSSRc
                         else
                         {
 
-                            Console.WriteLine("It is not an internal or external command...1");
+                            Console.WriteLine("It is not an internal or external command...");
 
                         }
 
@@ -454,4 +538,5 @@ internal class ConsoleSSRc
 
 
 }
+
 
