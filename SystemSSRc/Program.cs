@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using System.Security.AccessControl;
@@ -12,16 +13,18 @@ ConsoleSSRc consoleSSRc = new ConsoleSSRc();
 
 consoleSSRc.UsingConsole();
 
-
+public static class Ini
+{
+    public static string reserved_ini_path = @"C:\.SERVER\.system\SystemSSRc\resurved.ini";
+}
 
 // modified TCPListener abstract class
 public abstract class Listener
 {
 
-
     protected TcpListener listener;
 
-    public int Port {  get; private set; }
+    public int Port { get; private set; }
 
 
     public Listener(int port_ = 80)
@@ -55,22 +58,22 @@ public abstract class Listener
 
 
     // methodes for SystemListenerSSRc
-    public virtual void AddUser(string arg1, int arg2) {  }
+    public virtual void AddUser(string arg1, int arg2) { }
 
 
-    public virtual void StopUser(string arg1) {  }
+    public virtual void StopUser(string arg1) { }
 
 
     public virtual void RefreshUser(string arg1) { }
 
 
-    public virtual void DeleteUser(string arg1) {  }
+    public virtual void DeleteUser(string arg1, List<UserListenerSSRc> arg2) { }
 
 
-    public virtual void AddPath(string arg1, string arg2, string arg3) {  }
+    public virtual void AddPath(string arg1, string arg2, string arg3) { }
 
 
-    public virtual void RemovePath(string arg1, string arg2) {  }
+    public virtual void RemovePath(string arg1, string arg2) { }
 
 
     public virtual void GetPath(string arg1, string arg2) { }
@@ -78,7 +81,7 @@ public abstract class Listener
 
 
     // methodes for UserListenerSSRc
-    public static string RunProcess(string _ )
+    public static string RunProcess(string _)
     {
 
         string @mainRunFile = (string)_;
@@ -93,7 +96,7 @@ public abstract class Listener
 
             var iniParser = new FileIniDataParser();
 
-            IniData allDataFromIniFile = iniParser.ReadFile(@"C:\.SERVER\.system\SystemSSRc\resurved.ini");
+            IniData allDataFromIniFile = iniParser.ReadFile(Ini.reserved_ini_path);
 
 
             string @extensionPath = allDataFromIniFile["Compilers"][extension];
@@ -128,7 +131,7 @@ public abstract class Listener
 
             var iniParser = new FileIniDataParser();
 
-            IniData allDataFromIniFile = iniParser.ReadFile(@"C:\.SERVER\.system\SystemSSRc\resurved.ini");
+            IniData allDataFromIniFile = iniParser.ReadFile(Ini.reserved_ini_path);
 
             @mainRunFile = @mainRunFile.Replace("root", allDataFromIniFile["System"]["root"]);
 
@@ -143,7 +146,7 @@ public abstract class Listener
 
     }
 
-    public virtual void DownloadObject(object? _) {  }
+    public virtual void DownloadObject(object? _) { }
 
     public virtual byte? ImportObject(object? _) { return null; }
 
@@ -159,7 +162,7 @@ public class SystemListenerSSRc : Listener
 
     public override async void ListenProcess(List<UserListenerSSRc>? userList_)
     {
-        
+
 
         while (true)
         {
@@ -218,7 +221,7 @@ public class SystemListenerSSRc : Listener
                                 byte[] requestMessage = Encoding.UTF8.GetBytes(RunProcess(responseMessageArray[2]));
 
                                 await clientStream.WriteAsync(requestMessage);
-                                
+
                             }
 
                         }
@@ -233,19 +236,28 @@ public class SystemListenerSSRc : Listener
 
                     case "add":
 
-                        if(responseMessageArray.Length == 4 && userList_ != null)
+                        if (responseMessageArray.Length == 4)
                         {
 
                             if (responseMessageArray[1] == "-u")
                             {
 
-                                int port_ = Convert.ToInt32(responseMessageArray[2]);
+                                int port_ = Convert.ToInt32(responseMessageArray[3]);
+
+                                if(userList_.FirstOrDefault(x => x.Port == port_) != null)
+                                {
+
+                                    Console.WriteLine("Пользователь с таким именем уже есть");
+
+                                    break;
+
+                                }
 
                                 UserListenerSSRc newUser = new UserListenerSSRc(port_);
 
                                 userList_.Add(newUser);
 
-                                AddUser(responseMessageArray[3], port_); 
+                                AddUser(responseMessageArray[2], port_);
 
                             }
 
@@ -274,7 +286,7 @@ public class SystemListenerSSRc : Listener
     // console methodes
     public override void AddPath(string section, string key, string value)
     {
-        var iniFilePath = @"C:\.SERVER\.system\SystemSSRc\resurved.ini";
+        var iniFilePath = Ini.reserved_ini_path;
         var iniParser = new FileIniDataParser();
 
         try
@@ -305,7 +317,7 @@ public class SystemListenerSSRc : Listener
 
     public override void RemovePath(string section, string key)
     {
-        var iniFilePath = @"C:\.SERVER\.system\SystemSSRc\resurved.ini"; // Путь к вашему файлу resurved.ini
+        var iniFilePath = Ini.reserved_ini_path;
         var iniParser = new FileIniDataParser();
 
         try
@@ -337,7 +349,7 @@ public class SystemListenerSSRc : Listener
 
     public override void GetPath(string section, string key)
     {
-        var iniFilePath = @"C:\.SERVER\.system\SystemSSRc\resurved.ini";
+        var iniFilePath = Ini.reserved_ini_path;
         var iniParser = new FileIniDataParser();
 
         try
@@ -370,211 +382,165 @@ public class SystemListenerSSRc : Listener
 
 
     // console or TCP methodes
-    public override void AddUser(string Username, int Port) // remake with parms: arg1 and arg2, also key=value
-                                                            // pair in resurved.ini must be: Username="PortNumber PathToUserRootDirrectory"
+    public override void AddUser(string Username, int Port)
     {
-        var iniFilePath = @"C:\.SERVER\.system\SystemSSRc\resurved.ini";
+
+        var iniFilePath = Ini.reserved_ini_path;
+        var userDirectoryPath = $@"C:\.SERVER\{Username}";
+
+        if (!Directory.Exists(userDirectoryPath))
+        {
+            Directory.CreateDirectory(userDirectoryPath);
+        }
 
         var iniParser = new FileIniDataParser();
 
-        try
+        IniData allDataFromIniFile = iniParser.ReadFile(iniFilePath);
+        string section = "ActiveUsers";
+
+        string valueWithQuotes = @userDirectoryPath;
+
+        if (allDataFromIniFile.Sections.ContainsSection(section))
         {
-
-            IniData allDataFromIniFile = iniParser.ReadFile(iniFilePath);
-
-            string section = "ActiveUsers";
-
-            if (allDataFromIniFile.Sections.ContainsSection(section))
-            {
-
-                allDataFromIniFile[section].AddKey(Username, "active");
-
-            }
-            else
-            {
-
-                allDataFromIniFile.Sections.AddSection(section);
-
-                allDataFromIniFile[section].AddKey(Username, "active");
-
-            }
-
-            iniParser.WriteFile(iniFilePath, allDataFromIniFile);
-
+            allDataFromIniFile[section][Username] = valueWithQuotes;
         }
-        catch (Exception ex)
+        else
         {
-
-            Console.WriteLine($".ini can't being read: {ex.Message}");
-
+            allDataFromIniFile.Sections.AddSection(section);
+            allDataFromIniFile[section].AddKey(Username, valueWithQuotes);
         }
+
+        iniParser.WriteFile(iniFilePath, allDataFromIniFile);
 
     }
-
 
     public override void StopUser(string Username)
     {
 
-        var iniFilePath = @"C:\.SERVER\.system\SystemSSRc\resurved.ini";
-        
+        var iniFilePath = Ini.reserved_ini_path;
         var iniParser = new FileIniDataParser();
 
+        IniData allDataFromIniFile = iniParser.ReadFile(iniFilePath);
+        string activeSection = "ActiveUsers";
+        string stoppedSection = "StoppedUsers";
 
-        try
+        if (allDataFromIniFile.Sections.ContainsSection(activeSection) && allDataFromIniFile[activeSection].ContainsKey(Username))
         {
-            IniData allDataFromIniFile = iniParser.ReadFile(iniFilePath);
+            string userInfo = allDataFromIniFile[activeSection][Username];
 
-            string activeSection = "ActiveUsers";
-            string stoppedSection = "StoppedUsers";
+            allDataFromIniFile[activeSection].RemoveKey(Username);
 
-            if (allDataFromIniFile.Sections.ContainsSection(activeSection))
-            {
-
-                if (allDataFromIniFile[activeSection].ContainsKey(Username))
-                {
-
-                    allDataFromIniFile[activeSection].RemoveKey(Username);
-
-                }
-
-            }
-
-            if (allDataFromIniFile.Sections.ContainsSection(stoppedSection))
-            {
-
-                allDataFromIniFile[stoppedSection].AddKey(Username, "stopped");
-
-            }
-            else
+            if (!allDataFromIniFile.Sections.ContainsSection(stoppedSection))
             {
 
                 allDataFromIniFile.Sections.AddSection(stoppedSection);
-
-                allDataFromIniFile[stoppedSection].AddKey(Username, "stopped");
-
             }
 
-            iniParser.WriteFile(iniFilePath, allDataFromIniFile);
-
+            allDataFromIniFile[stoppedSection].AddKey(Username, userInfo);
         }
-        catch (Exception ex)
-        {
+        iniParser.WriteFile(iniFilePath, allDataFromIniFile);
 
-            Console.WriteLine($".ini can't being read: {ex.Message}");
-
-        }
     }
+
 
 
     public override void RefreshUser(string Username)
     {
-        var iniFilePath = @"C:\.SERVER\.system\SystemSSRc\resurved.ini";
+
+        var iniFilePath = Ini.reserved_ini_path;
         var iniParser = new FileIniDataParser();
 
+        IniData allDataFromIniFile = iniParser.ReadFile(iniFilePath);
+        string activeSection = "ActiveUsers";
+        string stoppedSection = "StoppedUsers";
 
-        try
+        if (allDataFromIniFile.Sections.ContainsSection(stoppedSection) && allDataFromIniFile[stoppedSection].ContainsKey(Username))
         {
-            IniData allDataFromIniFile = iniParser.ReadFile(iniFilePath);
 
-            string activeSection = "ActiveUsers";
+            string userInfo = allDataFromIniFile[stoppedSection][Username];
 
-            string stoppedSection = "StoppedUsers";
+            allDataFromIniFile[stoppedSection].RemoveKey(Username);
 
-            if (allDataFromIniFile.Sections.ContainsSection(stoppedSection))
-            {
-
-                if (allDataFromIniFile[stoppedSection].ContainsKey(Username))
-                {
-
-                    allDataFromIniFile[stoppedSection].RemoveKey(Username);
-
-                }
-            }
-
-            if (allDataFromIniFile.Sections.ContainsSection(activeSection))
-            {
-
-                allDataFromIniFile[activeSection].AddKey(Username, "active");
-
-            }
-            else
+            if (!allDataFromIniFile.Sections.ContainsSection(activeSection))
             {
 
                 allDataFromIniFile.Sections.AddSection(activeSection);
-
-                allDataFromIniFile[activeSection].AddKey(Username, "active");
-
             }
-
-            iniParser.WriteFile(iniFilePath, allDataFromIniFile);
-
+            allDataFromIniFile[activeSection].AddKey(Username, userInfo);
         }
-        catch (Exception ex)
-        {
 
-            Console.WriteLine($".ini can't being read: {ex.Message}");
+        iniParser.WriteFile(iniFilePath, allDataFromIniFile);
 
-        }
     }
 
-    public override void DeleteUser(string Username)
-    {
-        var iniFilePath = @"C:\.SERVER\.system\SystemSSRc\resurved.ini";
 
+    public override void DeleteUser(string Username, List<UserListenerSSRc> UserList)
+    {
+
+        var userDirectoryPath = $@"C:\.SERVER\{Username}";
+
+        if(!Directory.Exists(userDirectoryPath))
+        {
+
+            Console.WriteLine($"Произошла ошибка при удалении директории: {userDirectoryPath}");
+
+        }
+
+        var iniFilePath = Ini.reserved_ini_path;
         var iniParser = new FileIniDataParser();
 
+        IniData allDataFromIniFile = iniParser.ReadFile(iniFilePath);
+        string activeSection = "ActiveUsers";
+        string stoppedSection = "StoppedUsers";
 
-        try
+        if(UserList == null)
         {
 
-            IniData allDataFromIniFile = iniParser.ReadFile(iniFilePath);
+            Console.WriteLine("Ошибка удаления дирректории.");
 
-            string activeSection = "ActiveUsers";
+            return;
 
-            if (allDataFromIniFile.Sections.ContainsSection(activeSection))
+        }
+
+        if (!allDataFromIniFile[activeSection].ContainsKey(Username))
+        {
+
+            if(!allDataFromIniFile[stoppedSection].ContainsKey(Username))
             {
 
-                if (allDataFromIniFile[activeSection].ContainsKey(Username))
-                {
+                Console.WriteLine("Ошибка удаления дирректории.");
 
-                    allDataFromIniFile[activeSection].RemoveKey(Username);
-
-                }
+                return;
 
             }
 
-            string stoppedSection = "StoppedUsers";
-
-            if (allDataFromIniFile.Sections.ContainsSection(stoppedSection))
-            {
-
-                if (allDataFromIniFile[stoppedSection].ContainsKey(Username))
-                {
-
-                    allDataFromIniFile[stoppedSection].RemoveKey(Username);
-
-                }
-
-            }
-
-            iniParser.WriteFile(iniFilePath, allDataFromIniFile);
+            allDataFromIniFile[stoppedSection].RemoveKey(Username);
 
         }
-        catch (Exception ex)
+        else
         {
 
-            Console.WriteLine($".ini can't being read: {ex.Message}");
+            allDataFromIniFile[activeSection].RemoveKey(Username);
 
         }
+
+        iniParser.WriteFile(iniFilePath, allDataFromIniFile);
+
+        UserList.Remove(item: UserList.FirstOrDefault(x => x.Port == Convert.ToInt32(Username.Substring(4))));
+
+        Directory.Delete(userDirectoryPath, true);
+
+        Console.WriteLine("Директория успешно удалена.");
+
     }
-
-
 }
 
 
 
+
+
 // users connections listener class
-public class UserListenerSSRc(int port_) : Listener(port_)
+public class UserListenerSSRc(int port_) : Listener(port_), IComparable
 {
 
 
@@ -591,9 +557,9 @@ public class UserListenerSSRc(int port_) : Listener(port_)
 
             // Чтение ответа
             byte[] buffer = new byte[1024];
-            
+
             int bytesRead;
-            
+
             StringBuilder responseData = new StringBuilder();
 
 
@@ -601,14 +567,14 @@ public class UserListenerSSRc(int port_) : Listener(port_)
             {
 
                 bytesRead = await clientStream.ReadAsync(buffer, 0, buffer.Length);
-                
+
                 responseData.Append(Encoding.UTF8.GetString(buffer, 0, bytesRead));
-            
+
             } while (clientStream.DataAvailable);
 
 
             string responseMessage = responseData.ToString().Trim();
-            
+
             Console.WriteLine($"Response message: {responseMessage}");
 
         }
@@ -622,16 +588,33 @@ public class UserListenerSSRc(int port_) : Listener(port_)
 
     }
 
-    public override byte? ImportObject(object? _) 
+    public override byte? ImportObject(object? _)
     {
 
         Console.WriteLine("ok");
 
         return null;
-    
+
     }
 
+    public int CompareTo(object? obj)
+    {
 
+        if(obj is UserListenerSSRc userL)
+        {
+
+            if(userL.Port == Port)
+            {
+
+                return 1;
+
+            }
+
+        }
+
+        return 0;
+
+    }
 }
 
 
@@ -657,9 +640,41 @@ internal class ConsoleSSRc
 
         systemL = new SystemListenerSSRc();
 
-        // ONLY FOR TEST
-        userList = new List<UserListenerSSRc>() { new UserListenerSSRc(5000) };
-        // ONLY FOR TEST
+        userList = new List<UserListenerSSRc>();
+
+        var iniFilePath = Ini.reserved_ini_path;
+        var iniParser = new FileIniDataParser();
+
+        IniData allDataFromIniFile = iniParser.ReadFile(iniFilePath);
+        string activeSection = "ActiveUsers";
+        string stoppedSection = "StoppedUsers";
+
+        var activeArray = allDataFromIniFile[activeSection].ToArray();
+        var stoppedArrey = allDataFromIniFile[stoppedSection].ToArray();
+
+        if(activeArray != null)
+        {
+
+            foreach (var pair in activeArray)
+            {
+
+                userList.Add(new UserListenerSSRc(Convert.ToInt32(pair.KeyName[4..])));
+
+            }
+
+        }
+
+        if(stoppedArrey != null)
+        {
+
+            foreach (var pair in stoppedArrey)
+            {
+
+                userList.Add(new UserListenerSSRc(Convert.ToInt32(pair.KeyName[4..])));
+
+            }
+
+        }
 
         Console.WriteLine("console ready to work...");
 
@@ -673,12 +688,6 @@ internal class ConsoleSSRc
 
         systemL.ListenProcess(userList);
 
-        // ONLY FOR TEST
-        userList[0].StartListen();
-
-        userList[0].ListenProcess(null);
-        // ONLY FOR TEST
-
         while (true)
         {
 
@@ -688,7 +697,7 @@ internal class ConsoleSSRc
             if (consoleInput != null)
             {
 
-                string[] consoleInputArray= consoleInput.Split(' ');
+                string[] consoleInputArray = consoleInput.Split(' ');
 
                 switch (consoleInputArray[0])
                 {
@@ -706,7 +715,17 @@ internal class ConsoleSSRc
                             }
                             else if (consoleInputArray[1] == "-u")
                             {
-                                systemL.AddUser(consoleInputArray[3], Convert.ToInt32(consoleInputArray[2]));
+
+                                if(consoleInputArray.Length < 4)
+                                {
+
+                                    Console.WriteLine("It is not an internal or external command...");
+
+                                    break;
+
+                                }
+
+                                systemL.AddUser(consoleInputArray[2], Convert.ToInt32(consoleInputArray[3]));
 
                             }
                             else
@@ -724,7 +743,7 @@ internal class ConsoleSSRc
 
                     case "remove":
 
-                        if (consoleInputArray.Length == 4)
+                        if (consoleInputArray.Length >= 3)
                         {
 
                             if (consoleInputArray[1] == "-pa")
@@ -733,10 +752,10 @@ internal class ConsoleSSRc
                                 systemL.RemovePath(consoleInputArray[2], consoleInputArray[3]);
 
                             }
-                            else if (consoleInputArray[1] == "user")
+                            else if (consoleInputArray[1] == "-u")
                             {
 
-                                systemL.DeleteUser(consoleInputArray[2]);
+                                systemL.DeleteUser(consoleInputArray[2], userList);
 
                             }
                             else
@@ -777,7 +796,7 @@ internal class ConsoleSSRc
                         if (consoleInputArray.Length == 3)
                         {
 
-                            if (consoleInputArray[1] == "user")
+                            if (consoleInputArray[1] == "-u")
                             {
 
                                 systemL.StopUser(consoleInputArray[2]);
@@ -799,7 +818,7 @@ internal class ConsoleSSRc
                         if (consoleInputArray.Length == 3)
                         {
 
-                            if (consoleInputArray[1] == "user")
+                            if (consoleInputArray[1] == "-u")
                             {
 
                                 systemL.RefreshUser(consoleInputArray[2]);
@@ -818,7 +837,7 @@ internal class ConsoleSSRc
 
                     case "run":
 
-                        if( consoleInputArray.Length == 3)
+                        if (consoleInputArray.Length == 3)
                         {
 
                             if (Convert.ToInt32(consoleInputArray[1]) == 80)
@@ -830,10 +849,27 @@ internal class ConsoleSSRc
                             else
                             {
 
-                                foreach (var item in userList)
+                                var iniFilePath = Ini.reserved_ini_path;
+
+                                var iniParser = new FileIniDataParser();
+
+                                IniData allDataFromIniFile = iniParser.ReadFile(iniFilePath);
+
+                                if (allDataFromIniFile["ActiveUsers"].Count == 0)
                                 {
 
-                                    if (item.Port == Convert.ToInt32(consoleInputArray[1]))
+                                    Console.WriteLine("Someone want to connect to server, but it is not client.");
+
+                                    break;
+
+                                }
+
+                                var _ = allDataFromIniFile["ActiveUsers"].ToArray();
+
+                                foreach (var value in _)
+                                {
+
+                                    if (_.ToString().Split(' ')[0] == consoleInputArray[1])
                                     {
 
                                         Listener.RunProcess(consoleInputArray[2]);
@@ -845,7 +881,7 @@ internal class ConsoleSSRc
                                 }
 
                             }
-                            
+
 
                         }
                         else
