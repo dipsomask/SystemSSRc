@@ -6,9 +6,9 @@ using System.Security.AccessControl;
 using System.Text;
 using IniParser;
 using IniParser.Model;
+using Settings.SettingClasses;
 
-using SystemSSRc;
-using SystemSSRc.SettingClasses;
+using SSRc;
 
 
 
@@ -29,53 +29,14 @@ internal class ConsoleSSRc
     {"run", "80", "root\path\to\file"},
     */
 
-    private SystemListenerSSRc systemL;
+    private ListenerSSRc systemListener;
 
-    private UserListenerSSRc user5000;
-
-    private UserListenerSSRc user5001;
-
-    private UserListenerSSRc user5002;
-
-    private UserListenerSSRc user5003;
-
-    private UserListenerSSRc user5004;
-
-    private List<UserListenerSSRc>? userList;
 
 
     public ConsoleSSRc()
     {
 
-        systemL = new SystemListenerSSRc();
-
-        userList = new List<UserListenerSSRc>();
-
-        var iniFilePath = Ini.reserved_ini_path;
-        var iniParser = new FileIniDataParser();
-
-        IniData allDataFromIniFile = iniParser.ReadFile(iniFilePath);
-        string activeSection = "ActiveUsers";
-        string stoppedSection = "StoppedUsers";
-
-        var activeArray = allDataFromIniFile[activeSection].ToArray();
-        var stoppedArrey = allDataFromIniFile[stoppedSection].ToArray();
-
-        var users = activeArray.Concat(stoppedArrey).ToArray();
-
-        foreach (var pair in users)
-        {
-
-            userList.Add(new UserListenerSSRc(Convert.ToInt32(pair.KeyName[4..])));
-
-            if(userList.Count > 0)
-            {
-
-                userList.Last().StartListen();
-
-            }
-
-        }
+        systemListener = new ListenerSSRc();
 
         Console.WriteLine("console ready to work...");
 
@@ -85,9 +46,9 @@ internal class ConsoleSSRc
     public async void UsingConsole()
     {
 
-        systemL.StartListen();
+        systemListener.StartListen();
 
-        systemL.ListenProcess(userList);
+        systemListener.ListenProcess();
 
         while (true)
         {
@@ -111,7 +72,7 @@ internal class ConsoleSSRc
                             if (consoleInputArray[1] == "-pa")
                             {
 
-                                systemL.AddPath(consoleInputArray[2], consoleInputArray[3], consoleInputArray[4]);
+                                systemListener.AddPath(consoleInputArray[2], consoleInputArray[3], consoleInputArray[4]);
 
                             }
                             else if (consoleInputArray[1] == "-u")
@@ -126,27 +87,27 @@ internal class ConsoleSSRc
 
                                 }
 
-                                systemL.AddUser(consoleInputArray[2], Convert.ToInt32(consoleInputArray[3]));
+                                systemListener.AddUser(consoleInputArray[2], Convert.ToInt32(consoleInputArray[3]));
 
                                 switch(consoleInputArray[2])
                                 {
 
                                     case "user5000":
 
-                                        if(!userList.Contains(user5000))
+                                        if(systemListener.user5000 == null)
                                         {
 
-                                            userList.Add(user5000);
+                                            systemListener.user5000 = new ListenerSSRc(5000);
 
-                                            user5000.StartListen();
+                                            systemListener.user5000.StartListen();
 
-                                            user5000.ListenProcess(null);
+                                            systemListener.user5000.ListenProcess();
 
                                         }
                                         else
                                         {
 
-                                            Console.WriteLine($"There is a user with port {user5000.Port}. Can't add it.");
+                                            Console.WriteLine($"There is a user with port {systemListener.user5000.Port}. Can't add it.");
 
                                         }
 
@@ -154,20 +115,20 @@ internal class ConsoleSSRc
 
                                     case "user5001":
 
-                                        if (!userList.Contains(user5001))
+                                        if (systemListener.user5001 == null)
                                         {
 
-                                            userList.Add(user5001);
+                                            systemListener.user5001 = new ListenerSSRc(5001);
 
-                                            user5001.StartListen();
+                                            systemListener.user5001.StartListen();
 
-                                            user5001.ListenProcess(null);
+                                            systemListener.user5001.ListenProcess();
 
                                         }
                                         else
                                         {
 
-                                            Console.WriteLine($"There is a user with port {user5001.Port}. Can't add it.");
+                                            Console.WriteLine($"There is a user with port {systemListener.user5001.Port}. Can't add it.");
 
                                         }
 
@@ -175,20 +136,20 @@ internal class ConsoleSSRc
 
                                     case "user5002":
 
-                                        if (!userList.Contains(user5002))
+                                        if (systemListener.user5002 == null)
                                         {
 
-                                            userList.Add(user5002);
+                                            systemListener.user5002 = new ListenerSSRc(5000);
 
-                                            user5002.StartListen();
+                                            systemListener.user5002.StartListen();
 
-                                            user5002.ListenProcess(null);
+                                            systemListener.user5002.ListenProcess();
 
                                         }
                                         else
                                         {
 
-                                            Console.WriteLine($"There is a user with port {user5002.Port}. Can't add it.");
+                                            Console.WriteLine($"There is a user with port {systemListener.user5002.Port}. Can't add it.");
 
                                         }
 
@@ -196,20 +157,20 @@ internal class ConsoleSSRc
 
                                     case "user5003":
 
-                                        if (!userList.Contains(user5003))
+                                        if (systemListener.user5003 == null)
                                         {
 
-                                            userList.Add(user5003);
+                                            systemListener.user5003 = new ListenerSSRc(5000);
 
-                                            user5003.StartListen();
+                                            systemListener.user5003.StartListen();
 
-                                            user5003.ListenProcess(null);
+                                            systemListener.user5003.ListenProcess();
 
                                         }
                                         else
                                         {
 
-                                            Console.WriteLine($"There is a user with port {user5003.Port}. Can't add it.");
+                                            Console.WriteLine($"There is a user with port {systemListener.user5003.Port}. Can't add it.");
 
                                         }
 
@@ -217,26 +178,28 @@ internal class ConsoleSSRc
 
                                     case "user5004":
 
-                                        if (!userList.Contains(user5004))
+                                        if (systemListener.user5004 == null)
                                         {
 
-                                            userList.Add(user5004);
+                                            systemListener.user5004 = new ListenerSSRc(5000);
 
-                                            user5004.StartListen();
+                                            systemListener.user5004.StartListen();
 
-                                            user5004.ListenProcess(null);
+                                            systemListener.user5004.ListenProcess();
 
                                         }
                                         else
                                         {
 
-                                            Console.WriteLine($"There is a user with port {user5004.Port}. Can't add it.");
+                                            Console.WriteLine($"There is a user with port {systemListener.user5004.Port}. Can't add it.");
 
                                         }
 
                                         break;
 
                                     default:
+
+                                        Console.WriteLine("It is not an internal or external command...");
 
                                         break;
 
@@ -262,13 +225,13 @@ internal class ConsoleSSRc
                             if (consoleInputArray[1] == "-pa")
                             {
 
-                                systemL.RemovePath(consoleInputArray[2], consoleInputArray[3]);
+                                systemListener.RemovePath(consoleInputArray[2], consoleInputArray[3]);
 
                             }
                             else if (consoleInputArray[1] == "-u")
                             {
 
-                                systemL.DeleteUser(consoleInputArray[2], userList);
+                                systemListener.DeleteUser(consoleInputArray[2]);
 
                             }
                             else
@@ -290,7 +253,7 @@ internal class ConsoleSSRc
                             if (consoleInputArray[1] == "-pa")
                             {
 
-                                systemL.GetPath(consoleInputArray[2], consoleInputArray[3]);
+                                systemListener.GetPath(consoleInputArray[2], consoleInputArray[3]);
 
                             }
                             else
@@ -312,7 +275,7 @@ internal class ConsoleSSRc
                             if (consoleInputArray[1] == "-u")
                             {
 
-                                systemL.StopUser(consoleInputArray[2]);
+                                systemListener.StopUser(consoleInputArray[2]);
 
                             }
                             else
@@ -334,7 +297,7 @@ internal class ConsoleSSRc
                             if (consoleInputArray[1] == "-u")
                             {
 
-                                systemL.RefreshUser(consoleInputArray[2]);
+                                Console.WriteLine(systemListener.RefreshUser(consoleInputArray[2]));
 
                             }
                             else
@@ -356,7 +319,7 @@ internal class ConsoleSSRc
                             if (Convert.ToInt32(consoleInputArray[1]) == 80)
                             {
 
-                                Listener.RunProcess(consoleInputArray[2]);
+                                systemListener.RunProcess(consoleInputArray[2]);
 
                             }
                             else
@@ -371,6 +334,8 @@ internal class ConsoleSSRc
                                 if (allDataFromIniFile["ActiveUsers"].Count == 0)
                                 {
 
+                                    Console.WriteLine($"Невозможно запустить файл: {consoleInputArray[2]}");
+
                                     break;
 
                                 }
@@ -383,7 +348,28 @@ internal class ConsoleSSRc
                                     if (user.KeyName.Substring(4) == consoleInputArray[1])
                                     {
 
-                                        Listener.RunProcess(consoleInputArray[2]);
+                                        switch (consoleInputArray[1])
+                                        {
+
+                                            case "5000":
+                                                systemListener.user5000?.RunProcess(consoleInputArray[2]);
+                                                break;
+                                            case "5001":
+                                                systemListener.user5001?.RunProcess(consoleInputArray[2]);
+                                                break;
+                                            case "5002":
+                                                systemListener.user5002?.RunProcess(consoleInputArray[2]);
+                                                break;
+                                            case "5003":
+                                                systemListener.user5003?.RunProcess(consoleInputArray[2]);
+                                                break;
+                                            case "5004":
+                                                systemListener.user5004?.RunProcess(consoleInputArray[2]);
+                                                break;
+                                            default:
+                                                break;
+
+                                        }
 
                                         break;
 
@@ -409,65 +395,29 @@ internal class ConsoleSSRc
                         if (consoleInputArray[1] == "-a")
                         {
 
-                            if(userList != null)
+                            var iniFilePath = Ini.reserved_ini_path;
+
+                            var iniParser = new FileIniDataParser();
+
+                            IniData allDataFromIniFile = iniParser.ReadFile(iniFilePath);
+
+                            var activeArray = allDataFromIniFile["ActiveUsers"].ToArray();
+                            var stoppedArray = allDataFromIniFile["StoppedUsers"].ToArray();
+
+                            Console.WriteLine("[ActiveUsers]");
+
+                            foreach(var user in activeArray)
                             {
+                                Console.WriteLine(user.KeyName.ToString() + ", " +  user.Value.ToString());
+                            }
 
-                                int count = 0;
+                            Console.WriteLine();
 
-                                var iniFilePath = Ini.reserved_ini_path;
+                            Console.WriteLine("[StoppedUsers]");
 
-                                var iniParser = new FileIniDataParser();
-
-                                IniData allDataFromIniFile = iniParser.ReadFile(iniFilePath);
-
-                                Console.WriteLine("[ActiveUsers]");
-
-                                string condition = string.Empty;
-
-                                foreach(var user in allDataFromIniFile["ActiveUsers"])
-                                {
-
-                                    if(userList.FirstOrDefault(x => x.Port == Convert.ToInt32(user.KeyName.Substring(4))) != null)
-                                    {
-
-                                        condition = "connected";
-
-                                    }
-                                    else
-                                    {
-
-                                        condition = "noconnected";
-
-                                    }
-
-                                    Console.WriteLine($"user: {user.KeyName}, {user.Value}, {condition}");
-
-                                }
-
-                                Console.WriteLine();
-
-                                Console.WriteLine("[StoppedUsers]");
-
-                                foreach(var user in allDataFromIniFile["StoppedUsers"])
-                                {
-
-                                    if(userList.FirstOrDefault(x => x.Port == Convert.ToInt32(user.KeyName.Substring(4))) != null)
-                                    {
-
-                                        condition = "connected";
-
-                                    }
-                                    else
-                                    {
-
-                                        condition = "noconnected";
-
-                                    }
-
-                                    Console.WriteLine($"user: {user.KeyName}, {user.Value}, {condition}");
-
-                                }
-
+                            foreach (var user in stoppedArray)
+                            {
+                                Console.WriteLine(user.KeyName.ToString() + ", " + user.Value.ToString());
                             }
 
                         }
@@ -498,7 +448,6 @@ internal class ConsoleSSRc
 
 
         }
-
 
 
     }
