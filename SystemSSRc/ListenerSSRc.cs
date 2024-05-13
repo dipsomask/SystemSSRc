@@ -462,6 +462,14 @@ namespace SSRc
 
         }
 
+        /// <summary>
+        /// Документирует каждое действие совершённое сервером
+        /// </summary>
+        public void LogData(string message)
+        {
+
+        }
+
 
 
 
@@ -789,6 +797,7 @@ namespace SSRc
         /// Консольный и TCP метод. Запускает и возвращает результат процесса выполнения 
         /// программы, хранящейся по переданному пути.
         /// </summary>
+        /// 
         public virtual string RunProcess(string path)
         {
 
